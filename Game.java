@@ -1,3 +1,5 @@
+import java.util.Stack;
+
 /**
  *  This class is the main class of the "World of Zuul" application. 
  *  "World of Zuul" is a very simple, text based adventure game.  Users 
@@ -19,6 +21,9 @@ public class Game
 {
     private Parser parser;
     private Room currentRoom;
+    // Private Room previousRoom;
+    private Stack<Room> roomHistory;
+    private Player player;
         
     /**
      * Create the game and initialise its internal map.
@@ -57,7 +62,10 @@ public class Game
 
         office.setExit("west", lab);
 
+        player = new Player("", currentRoom);
         currentRoom = outside;  // start game outside
+        //previousRoom = null;
+        roomHistory = new Stack<>();
     }
 
     /**
@@ -75,7 +83,7 @@ public class Game
             Command command = parser.getCommand();
             finished = processCommand(command);
         }
-        System.out.println("Thank you for playing.  Good bye.");
+        System.out.println("Thank you for playing" + player.getName() + ". Good bye.");
     }
 
     /**
@@ -113,6 +121,22 @@ public class Game
 
             case GO:
                 goRoom(command);
+                break;
+                
+            case LOOK:
+                look();
+                break;
+                
+            case BACK:
+                goBack();
+                break;
+                
+            case TAKE:
+                take(command);
+                break;
+                
+            case DROP:
+                drop(command);
                 break;
 
             case QUIT:
@@ -159,7 +183,10 @@ public class Game
             System.out.println("There is no door!");
         }
         else {
-            currentRoom = nextRoom;
+            //previousRoom = currentRoom;
+            roomHistory.push(currentRoom);
+            //currentRoom = nextRoom;
+            player.setCurrentRoom(nextRoom);
             System.out.println(currentRoom.getLongDescription());
         }
     }
@@ -178,5 +205,62 @@ public class Game
         else {
             return true;  // signal that we want to quit
         }
+    }
+    
+    /**
+     * "Look" will print the where the player at right now
+     */
+    private void look()
+    {
+        //System.out.println(currentRoom.getLongDescription());
+        System.out.println(player.getCurrentRoom().getLongDescription());
+    }
+    
+    /**
+     * "Back" will take the player back throught the previously room.
+     */
+    private void goBack()
+    {
+        //if(previousRoom == null) {
+            //System.out.println("You can't go back, there is no previous room!");
+        //} else {
+            //currentRoom = previousRoom;
+            //System.out.println("You are back in the " + currentRoom.getLongDescription());
+        //}
+        
+        if(roomHistory.empty()) {
+            System.out.println("You can't go back, there is no previous room!");
+        } else {
+            //currentRoom = roomHistory.pop();
+            player.setCurrentRoom(roomHistory.pop());
+            System.out.println("You are back in the " + currentRoom.getLongDescription());
+        }
+    }
+    
+    /**
+     * Take a item
+     */
+    private void take(Command command) {
+        if(!command.hasSecondWord()) {
+            System.out.println("You are taken an item");
+            return;
+        }
+        
+        String itemName = command.getSecondWord();
+        Item item = player.getCurrentRoom().getItem(itemName);
+        player.takeItem(item);
+    }
+    
+    /**
+     * Drop an item
+     */
+    private void drop(Command command) {
+        if(!command.hasSecondWord()) {
+            System.out.println("You are dropped an item");
+            return;
+        }
+        
+        String itemName = command.getSecondWord();
+        player.getCurrentRoom().addItem(player.dropItem(itemName));
     }
 }
